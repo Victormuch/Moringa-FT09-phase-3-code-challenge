@@ -73,4 +73,4 @@ class Article:
         author_name = author_info['name'] if author_info else "None"
         magazine_info = self.get_magazine_info_by_id(self.magazine_id)
         magazine_name = magazine_info['name'] if magazine_info else "None"
-        return f
+        return f"<Article id:{self.id} title:{self.title} content:{self.content} author_id:{self.author_id} magazine_id:{self.magazine_id}>"

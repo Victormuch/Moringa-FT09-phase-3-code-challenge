@@ -31,12 +31,12 @@ def main():
 
     # Create a magazine
     cursor.execute('INSERT INTO magazines (name, category) VALUES (?,?)', (magazine_name, magazine_category))
-    magazine_id = cursor.lastrowid # Use this to fetch the id of the newly created magazine
+    magazine_id = cursor.lastrowid
 
     # Create an article
-    cursor.execute('INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)',
-                   (article_title, article_content, author_id, magazine_id))
-
+    cursor.execute('INSERT INTO articles (title, content, magazine_id) VALUES (?, ?, ?)',
+                   (article_title, article_content, magazine_id))
+    article_id = cursor.lastrowid
     conn.commit()
 
     # Query the database for inserted records. 
