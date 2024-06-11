@@ -1,5 +1,4 @@
-from database.connection import get_db_connection
-
+from .__init__ import conn, cursor
 class Magazine:
 
     all = {}
@@ -41,16 +40,14 @@ class Magazine:
     
 
     def save(self):
-        conn = get_db_connection()
-        CURSOR = conn.cursor()
         sql = """
             INSERT INTO magazines (name, category)
             VALUES (?,?)
         """
-        CURSOR.execute(sql, (self.name, self.category))
+        cursor.execute(sql, (self.name, self.category))
         conn.commit()
         
-        self.id = CURSOR.lastrowid
+        self.id = cursor.lastrowid
         type(self).all[self.id] = self
 
     @classmethod
@@ -66,8 +63,6 @@ class Magazine:
 
     def articles(self):
         from models.article import Article
-        conn = get_db_connection()
-        CURSOR = conn.cursor()
         """retrieves and returns a list of articles in this magazine """
         sql = """
             SELECT ar.*
@@ -76,8 +71,8 @@ class Magazine:
             WHERE m.id = ?
         """
 
-        CURSOR.execute(sql, (self.id,))
-        article_data = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        article_data = cursor.fetchall()
 
         articles = []
         for row in article_data:
@@ -87,8 +82,6 @@ class Magazine:
     
     def contributors(self):
         from models.author import Author
-        conn = get_db_connection()
-        CURSOR = conn.cursor()
         """retrieves and returns a lst of authors who wrote articles in this magazine"""
         sql = """
             SELECT DISTINCT a.*
@@ -98,8 +91,8 @@ class Magazine:
             WHERE m.id = ?
         """
 
-        CURSOR.execute(sql, (self.id,))
-        author_data = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        author_data = cursor.fetchall()
 
         authors = []
         for row in author_data:
@@ -107,8 +100,6 @@ class Magazine:
         return authors
     
     def article_titles(self):
-        conn = get_db_connection()
-        CURSOR = conn.cursor()
         """
         Retrieves and returns a list of titles (strings) of all articles written for this magazine.
         Returns None if the magazine has no articles.
@@ -120,8 +111,8 @@ class Magazine:
             WHERE m.id = ?
         """
 
-        CURSOR.execute(sql, (self.id,))
-        article_data = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        article_data = cursor.fetchall()
 
         if not article_data:
             return None
@@ -131,8 +122,6 @@ class Magazine:
 
     def contributing_authors(self):
         from models.author import Author
-        conn = get_db_connection()
-        CURSOR = conn.cursor()
         """
         Retrieves and returns a list of Author objects who wrote more than 2 articles for this magazine.
         Returns None if the magazine has no authors with more than 2 publications.
@@ -147,8 +136,8 @@ class Magazine:
             HAVING COUNT(ar.id) > 2
         """
 
-        CURSOR.execute(sql, (self.id,))
-        author_data = CURSOR.fetchall()
+        cursor.execute(sql, (self.id,))
+        author_data = cursor.fetchall()
 
         if not author_data:
             return None

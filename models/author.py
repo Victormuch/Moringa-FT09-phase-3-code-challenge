@@ -1,5 +1,4 @@
-from database.connection import get_db_connection
-
+from .__init__ import conn, cursor
 class Author:
     def __init__(self, id, name):
         self._id = id
@@ -32,8 +31,6 @@ class Author:
     @property
     def articles(self):
         from models.article import Article
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('''
             SELECT a.id, a.title, a.content, a.author_id, a.magazine_id
             FROM articles a
@@ -50,8 +47,6 @@ class Author:
     @property
     def magazines(self):
         from models.magazine import Magazine
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('''
             SELECT DISTINCT m.id, m.name, m.category
             FROM magazines m

@@ -1,9 +1,8 @@
-# database/setup.py
+from .connection import get_db_connection
 
-import sqlite3
 
 def create_tables():
-    conn = sqlite3.connect('magazine.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
 
     cursor.execute('''

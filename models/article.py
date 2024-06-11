@@ -1,6 +1,6 @@
-from database.connection import get_db_connection
 from .author import Author
 from .magazine import Magazine
+from .__init__ import conn, cursor
 class Article:
     def __init__(self, article_id, title, content, author_id, magazine_id):
         self.id = article_id
@@ -42,8 +42,6 @@ class Article:
             raise AttributeError("Title cannot be changed")
 
     def create_db_entry(self):
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)', 
                        (self.title, self.content, self.author_id, self.magazine_id))
         self.id = cursor.lastrowid
@@ -52,8 +50,6 @@ class Article:
 
     @staticmethod
     def get_author_info_by_id(author_id):
-        conn = get_db_connection()
-        cursor = conn.cursor()
         cursor.execute('SELECT * FROM authors WHERE id = ?', (author_id,))
         author_info = cursor.fetchone()
         conn.close()
@@ -61,8 +57,7 @@ class Article:
 
     @staticmethod
     def get_magazine_info_by_id(magazine_id):
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    
         cursor.execute('SELECT * FROM magazines WHERE id = ?', (magazine_id,))
         magazine_info = cursor.fetchone()
         conn.close()

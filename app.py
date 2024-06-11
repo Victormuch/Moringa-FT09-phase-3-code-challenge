@@ -24,7 +24,7 @@ def main():
         you can modify it to meet the requirements of your implmentation.
     '''
     # Create an author
-    cursor.execute('INSERT INTO authors (name) VALUES (?)', (author_name,))
+    cursor.execute('INSERT INTO Author (name) VALUES (?)', (author_name,))
     author_id = cursor.lastrowid 
 
     # Create a magazine
