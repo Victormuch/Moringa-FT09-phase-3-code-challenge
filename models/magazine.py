@@ -1,71 +1,160 @@
-from connection2 import CONN, CURSOR
-from author import Author 
+from database.connection import get_db_connection
 
 class Magazine:
-    def __init__(self, name, category, id=None):
-        self._id = id
-        self.name = name
-        self.category = category
 
+    all = {}
+    def __init__(self, id, name=None, category=None):
+        self._id = id
+        self._name = name
+        self._category = category
+
+    def __repr__(self):
+        return f'<Magazine {self.id} {self.name} {self.category}>'
+    
     @property
     def id(self):
         return self._id
-
+    
     @id.setter
-    def id(self, value):
-        if not isinstance(value, int):
-            raise ValueError("ID must be of type int")
-        self._id = value
+    def id(self, id):
+        if isinstance(id, int):
+            self._id = id
+
 
     @property
     def name(self):
         return self._name
-
+    
     @name.setter
-    def name(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Name must be a string")
-        if len(value) < 2 or len(value) > 16:
-            raise ValueError("Name must be between 2 and 16 characters, inclusive")
-        self._name = value
+    def name(self, new_name):
+        if isinstance(new_name, str) and 2 <= len(new_name) <= 16:
+            self._name = new_name
 
     @property
     def category(self):
         return self._category
     
     @category.setter
-    def category(self, value):
-        if not isinstance(value, str):
-            raise ValueError("Category must be a string")
-        if len(value) == 0:
-            raise ValueError("Category must be longer than 0")
-        self._category = value
+    def category(self, new_category):
+        if isinstance(new_category, str) and len(new_category) > 0:
+            self._category = new_category
+    
 
     def save(self):
-        if not self.name or not self.category:
-            raise ValueError("Name and category must be set before saving")
-        sql = "INSERT INTO magazines(name, category) VALUES (?, ?)"
+        conn = get_db_connection()
+        CURSOR = conn.cursor()
+        sql = """
+            INSERT INTO magazines (name, category)
+            VALUES (?,?)
+        """
         CURSOR.execute(sql, (self.name, self.category))
-        CONN.commit()
+        conn.commit()
+        
         self.id = CURSOR.lastrowid
+        type(self).all[self.id] = self
+
+    @classmethod
+    #creates a new entry in the database
+    def create(cls, name, category):
+        magazine = cls(name, category)
+        magazine.save()
+        return magazine
     
+    def get_magazine_id(self):
+        return self.id
+    
+
     def articles(self):
-        if not self.id:
-            raise ValueError("ID must be set before fetching articles")
-        sql = "SELECT * FROM articles WHERE magazine_id = ?"
+        from models.article import Article
+        conn = get_db_connection()
+        CURSOR = conn.cursor()
+        """retrieves and returns a list of articles in this magazine """
+        sql = """
+            SELECT ar.*
+            FROM articles ar
+            INNER JOIN magazines m ON ar.magazine = m.id
+            WHERE m.id = ?
+        """
+
         CURSOR.execute(sql, (self.id,))
-        articles = CURSOR.fetchall()
+        article_data = CURSOR.fetchall()
+
+        articles = []
+        for row in article_data:
+            articles.append(Article(*row))
+
         return articles
-
+    
     def contributors(self):
-        if not self.id:
-            raise ValueError("ID must be set before fetching contributors")
-        sql = "SELECT DISTINCT authors.* FROM authors JOIN articles ON authors.id = articles.author_id WHERE articles.magazine_id = ?"
+        from models.author import Author
+        conn = get_db_connection()
+        CURSOR = conn.cursor()
+        """retrieves and returns a lst of authors who wrote articles in this magazine"""
+        sql = """
+            SELECT DISTINCT a.*
+            FROM authors a
+            INNER JOIN articles ar ON ar.author = a.id
+            INNER JOIN magazines m on ar.magazine = m.id
+            WHERE m.id = ?
+        """
+
         CURSOR.execute(sql, (self.id,))
-        contributors = CURSOR.fetchall()
-        return [Author(*contributor) for contributor in contributors]
+        author_data = CURSOR.fetchall()
 
-    def __repr__(self):
-        return f'<Magazine {self.name}>'
+        authors = []
+        for row in author_data:
+            authors.append(Author(*row))
+        return authors
+    
+    def article_titles(self):
+        conn = get_db_connection()
+        CURSOR = conn.cursor()
+        """
+        Retrieves and returns a list of titles (strings) of all articles written for this magazine.
+        Returns None if the magazine has no articles.
+        """
+        sql = """
+            SELECT ar.title
+            FROM articles ar
+            INNER JOIN magazines m ON ar.magazine = m.id
+            WHERE m.id = ?
+        """
 
+        CURSOR.execute(sql, (self.id,))
+        article_data = CURSOR.fetchall()
 
+        if not article_data:
+            return None
+
+        titles = [row[0] for row in article_data]
+        return titles
+
+    def contributing_authors(self):
+        from models.author import Author
+        conn = get_db_connection()
+        CURSOR = conn.cursor()
+        """
+        Retrieves and returns a list of Author objects who wrote more than 2 articles for this magazine.
+        Returns None if the magazine has no authors with more than 2 publications.
+        """
+        sql = """
+            SELECT DISTINCT a.*
+            FROM authors a
+            INNER JOIN articles ar ON ar.author = a.id
+            INNER JOIN magazines m on ar.magazine = m.id
+            WHERE m.id = ?
+            GROUP BY a.id
+            HAVING COUNT(ar.id) > 2
+        """
+
+        CURSOR.execute(sql, (self.id,))
+        author_data = CURSOR.fetchall()
+
+        if not author_data:
+            return None
+
+        authors = []
+        for row in author_data:
+            authors.append(Author(*row)) 
+
+        return authors

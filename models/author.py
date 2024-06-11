@@ -1,85 +1,71 @@
-from connection2 import CONN, CURSOR
+from database.connection import get_db_connection
 
 class Author:
-    def __init__(self, name, id=None):
+    def __init__(self, id, name):
         self._id = id
-        self._name = None  # Initialize name as None
-
-        # Set name property using setter
-        self.name = name  
+        self.name = name
 
     @property
     def id(self):
         return self._id
-    
+
     @id.setter
-    def id(self, value):
-        if value is not None and not isinstance(value, int):
-            raise TypeError("Author ID must be an integer")
-        self._id = value
+    def id(self, id):
+        if not isinstance(id, int):
+            raise TypeError("id must be of type int")
+        self._id = id
 
     @property
     def name(self):
-        if self._name is None:
-            if self.id is not None:
-                sql = "SELECT name FROM authors WHERE id = ?"
-                CURSOR.execute(sql, (self.id,))
-                result = CURSOR.fetchone()
-                if result:
-                    self._name = result[0]
         return self._name
-    
+
     @name.setter
-    def name(self, value):
-        if not isinstance(value, str):
-            raise TypeError("Author name must be a string")
-        if len(value) == 0:
-            raise ValueError("Author name must be longer than 0 characters")
-        if self._name is not None:
-            raise AttributeError("Author name cannot be changed after instantiation")
-        self._name = value
-    
-    @classmethod 
-    def create(cls, name):
-        author = cls(name)
-        author.save()
-        return author
-    
-    def save(self):
-        if not self.name:
-            raise ValueError("Author name must not be empty")
-        sql = "INSERT INTO authors (name) VALUES (?)"
-        CURSOR.execute(sql, (self.name,))
-        CONN.commit()
-        self.id = CURSOR.lastrowid
-        
+    def name(self, name):
+        if not isinstance(name, str):
+            raise TypeError("name must be of type str")
+        if len(name) == 0:
+            raise ValueError("name must be longer than 0 characters")
+        if hasattr(self, '_name'):
+            raise AttributeError("name cannot be changed once set")
+        self._name = name
+
+    @property
     def articles(self):
-        if self.id is None:
+        from models.article import Article
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT a.id, a.title, a.content, a.author_id, a.magazine_id
+            FROM articles a
+            JOIN authors au ON a.author_id = au.id
+            WHERE au.id = ?
+        ''', (self.id,))
+        article_info = cursor.fetchall()
+        conn.close()
+        if article_info:
+            return [Article(article["id"], article['title'], article['content'], article['author_id'], article['magazine_id']) for article in article_info]
+        else:
             return []
-        sql = """
-        SELECT articles.id, articles.title, articles.content
-        FROM articles
-        WHERE articles.author_id = ?
-        """
-        CURSOR.execute(sql, (self.id,))
-        articles = CURSOR.fetchall()
-        return articles 
-    
+
+    @property
     def magazines(self):
-        if self.id is None:
+        from models.magazine import Magazine
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT DISTINCT m.id, m.name, m.category
+            FROM magazines m
+            JOIN articles a ON m.id = a.magazine_id
+            WHERE a.author_id = ?
+        ''', (self.id,))
+        magazine_info = cursor.fetchall()
+        conn.close()
+        if magazine_info:
+            return [Magazine(magazine["id"], magazine['name'], magazine['category']) for magazine in magazine_info]
+        else:
             return []
 
-        sql = """
-        SELECT magazines.id, magazines.name
-        FROM magazines
-        JOIN articles ON magazines.id = articles.magazine_id
-        WHERE articles.author_id = ?
-        """
-        CURSOR.execute(sql, (self.id,))
-        magazines = CURSOR.fetchall()
-        return magazines
-
-
-     
     def __repr__(self):
-        return f'<Author {self.name}>'
+        article_titles = ", ".join([article.title for article in self.articles]) if self.articles else "None"
+        magazine_titles = ", ".join([magazine.name for magazine in self.magazines]) if self.magazines else "None"
+        return f'<Author: {self.name} | id: {self.id} | MAGAZINES:{magazine_titles} | ARTICLES:{article_titles}>'
