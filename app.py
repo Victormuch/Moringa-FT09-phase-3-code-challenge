@@ -21,10 +21,10 @@ def main():
 
     '''
         The following is just for testing purposes, 
-        you can modify it to meet the requirements of your implmentation.
+        you can modify it to meet the requirements of your implementation.
     '''
     # Create an author
-    cursor.execute('INSERT INTO Author (name) VALUES (?)', (author_name,))
+    cursor.execute('INSERT INTO authors (name) VALUES (?)', (author_name,))
     author_id = cursor.lastrowid 
 
     # Create a magazine
@@ -32,8 +32,8 @@ def main():
     magazine_id = cursor.lastrowid
 
     # Create an article
-    cursor.execute('INSERT INTO articles (title, content, magazine_id) VALUES (?, ?, ?)',
-                   (article_title, article_content, magazine_id))
+    cursor.execute('INSERT INTO articles (title, content, author_id, magazine_id) VALUES (?, ?, ?, ?)',
+                   (article_title, article_content, author_id, magazine_id))
     article_id = cursor.lastrowid
     conn.commit()
 
